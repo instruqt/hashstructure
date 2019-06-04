@@ -242,6 +242,13 @@ func (w *walker) visit(v reflect.Value, opts *visitOpts) (uint64, error) {
 					continue
 				}
 
+				if tag == "ignore_zero" {
+					zeroVal := reflect.Zero(reflect.TypeOf(innerV.Interface())).Interface()
+					if innerV.Interface() == zeroVal {
+						continue
+					}
+				}
+
 				// if string is set, use the string value
 				if tag == "string" {
 					if impl, ok := innerV.Interface().(fmt.Stringer); ok {

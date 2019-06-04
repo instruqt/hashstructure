@@ -273,6 +273,82 @@ func TestHash_equalIgnore(t *testing.T) {
 	}
 }
 
+func TestHash_equalIgnoreZero(t *testing.T) {
+
+	type NullString struct {
+		Valid  bool
+		String string
+	}
+
+	structA := struct {
+		Name string
+	}{
+		Name: "foo",
+	}
+
+	structB1 := struct {
+		Name string
+		UUID NullString
+	}{Name: "foo"}
+
+	structB2 := struct {
+		Name string
+		UUID NullString
+	}{
+		Name: "foo",
+		UUID: NullString{Valid: true, String: "bar"},
+	}
+
+	structC1 := struct {
+		Name string
+		UUID NullString `hash:"ignore_zero"`
+	}{
+		Name: "foo",
+	}
+
+	structC2 := struct {
+		Name string
+		UUID NullString `hash:"ignore_zero"`
+	}{
+		Name: "foo",
+		UUID: NullString{Valid: true, String: "bar"},
+	}
+
+	cases := []struct {
+		One, Two interface{}
+		Match    bool
+	}{
+		{structA, structB1, false},
+		{structA, structB2, false},
+		{structA, structC1, true},
+		{structA, structC2, false},
+		{structB1, structC1, false},
+		{structB1, structC2, false},
+		{structB2, structC1, false},
+		{structB2, structC2, true},
+	}
+
+	for _, tc := range cases {
+		one, err := Hash(tc.One, nil)
+		if err != nil {
+			t.Fatalf("Failed to hash %#v: %s", tc.One, err)
+		}
+		two, err := Hash(tc.Two, nil)
+		if err != nil {
+			t.Fatalf("Failed to hash %#v: %s", tc.Two, err)
+		}
+
+		// Zero is always wrong
+		if one == 0 {
+			t.Fatalf("zero hash: %#v", tc.One)
+		}
+
+		// Compare
+		if (one == two) != tc.Match {
+			t.Fatalf("bad, expected: %#v\n\n%#v\n\n%#v", tc.Match, tc.One, tc.Two)
+		}
+	}
+}
 func TestHash_stringTagError(t *testing.T) {
 	type Test1 struct {
 		Name        string
